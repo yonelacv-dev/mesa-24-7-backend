@@ -2,7 +2,7 @@ from datetime import time
 
 from sqlalchemy import func, select
 
-from app.seed import DEFAULT_WINDOW, DEMO_VENUES, seed
+from app.seed import DEFAULT_PASSWORD, DEFAULT_WINDOW, DEMO_VENUES, seed
 from app.venues.infrastructure.models import VenueModel, VenueScheduleModel
 from app.waitlist.domain.enums import EntryStatus
 from app.waitlist.infrastructure.models import QueueEntryModel
@@ -31,9 +31,10 @@ async def test_seed_is_idempotent_and_never_resets_existing_users(db):
         assert await session.scalar(select(func.count()).select_from(VenueModel)) == 3
 
 
-async def test_seed_generates_a_different_password_for_each_user(db):
-    passwords = [c.password for c in await seed(db.factory, db.clock)]
-    assert len(set(passwords)) == 3 and all(len(p) >= 12 for p in passwords)
+async def test_seed_uses_the_fixed_default_password_when_none_is_given(db):
+    """Sin SEED_PASSWORD, siempre demo1234 — no depende de que ninguna variable de entorno llegue bien."""
+    credentials = await seed(db.factory, db.clock)
+    assert all(c.password == DEFAULT_PASSWORD for c in credentials)
 
 
 async def test_by_default_the_schedule_is_the_real_business_window_not_24h(db):

@@ -5,14 +5,14 @@
     python -m app.seed --open-24h          # además, los 3 locales abiertos 24h (solo para pruebas)
 
 --open-24h también se puede pedir con la variable de entorno SEED_OPEN_24H=true (útil en Docker).
-Es idempotente: lo que ya existe no se toca. Las contraseñas de los usuarios nuevos se generan al azar y se
-muestran una sola vez (o se fija una con SEED_PASSWORD).
+Es idempotente: lo que ya existe no se toca. La contraseña de los usuarios nuevos es siempre DEFAULT_PASSWORD
+("demo1234"), salvo que fijes otra con SEED_PASSWORD. No depende de que ninguna variable de entorno llegue
+bien al proceso: si no se pasa nada, cae directo en ese valor fijo.
 """
 
 import argparse
 import asyncio
 import os
-import secrets
 from dataclasses import dataclass
 from datetime import time, timedelta
 
@@ -45,6 +45,7 @@ DEMO_VENUES = [
     ("casa-mediterranea", "Casa Mediterránea", "CL", "America/Santiago", "casa-mediterranea"),
 ]
 DEFAULT_WINDOW = (time(11, 0), time(1, 0))  # 11:00 a 01:00 todos los días (supuesto del brief, editable)
+DEFAULT_PASSWORD = "demo1234"  # contraseña de los usuarios nuevos si no se fija SEED_PASSWORD
 
 # nombre, personas, teléfono, minutos desde que llegó, minutos desde que fue llamado (None = esperando)
 DEMO_QUEUE = [
@@ -83,7 +84,7 @@ async def _ensure_user(
     existing = await SQLAlchemyUserRepository(session).get_by_username(username)
     if existing is not None:
         return existing, None
-    password = password or secrets.token_urlsafe(9)
+    password = password or DEFAULT_PASSWORD
     user = User(venue_id=venue_id, username=username, password_hash=await hasher.hash(password))
     await SQLAlchemyUserRepository(session).save(user)
     return user, password
