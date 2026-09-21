@@ -42,7 +42,7 @@ services:
       SEED_ON_START: ${SEED_ON_START:-true}
       SEED_DEMO_QUEUE: ${SEED_DEMO_QUEUE:-true}
       SEED_OPEN_24H: ${SEED_OPEN_24H:-true}
-      SEED_PASSWORD: ${SEED_PASSWORD:-}
+      SEED_PASSWORD: ${SEED_PASSWORD:-demo1234}
     ports:
       - "${API_PORT:-8000}:8000"
     networks:
