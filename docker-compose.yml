@@ -1,0 +1,58 @@
+# Servidor de pruebas: la base de datos vive aquí, junto con las migraciones que la crean.
+#
+#   docker network create waitlist-net    # una sola vez, compartida con el frontend
+#   docker compose up -d --build
+#
+# Variables en backend/.env (docker-compose las lee del mismo archivo que usa la app):
+#   MYSQL_ROOT_PASSWORD   obligatoria, sin valor por defecto a propósito
+#   MYSQL_DATABASE, CORS_ORIGINS, RATE_LIMIT_ENABLED, SSE_HEARTBEAT_SECONDS   igual que en local
+#   API_PORT               puerto publicado en el host (por defecto 8000)
+#   SEED_ON_START, SEED_DEMO_QUEUE, SEED_OPEN_24H, SEED_PASSWORD   ver docker-entrypoint.sh
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en backend/.env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-waiting_list}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Sin "ports": la base no se expone fuera de la red de Docker.
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?define MYSQL_ROOT_PASSWORD en backend/.env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-waiting_list}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost"]}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      SSE_HEARTBEAT_SECONDS: ${SSE_HEARTBEAT_SECONDS:-15}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      SEED_DEMO_QUEUE: ${SEED_DEMO_QUEUE:-true}
+      SEED_OPEN_24H: ${SEED_OPEN_24H:-true}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    networks:
+      default: {}
+      waitlist-net: {}
+
+networks:
+  waitlist-net:
+    name: ${WAITLIST_NETWORK:-waitlist-net}
+    external: true
+
+volumes:
+  db_data:
