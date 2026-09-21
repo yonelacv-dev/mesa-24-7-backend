@@ -34,8 +34,9 @@ poetry run uvicorn app.main:app --reload
   Es idempotente: repetirlo no cambia nada de lo que ya exista. La contraseña de los tres usuarios es `demo1234`
   (fija, pensada para quien revisa la prueba); para poner otra: `SEED_PASSWORD=miclave ./scripts/setup_demo_data.sh`.
 - Sin el paso 3 (a mano, sin el script): `mysql -uroot -e "CREATE DATABASE waiting_list ..."`, luego
-  `poetry run alembic upgrade head` y `poetry run python -m app.seed --demo-queue` — este último imprime una
-  contraseña al azar **una sola vez** por usuario, y no toca el horario real (11:00 a 01:00, ver abajo).
+  `poetry run alembic upgrade head` y `poetry run python -m app.seed --demo-queue` — misma contraseña fija
+  `demo1234` (el default vive en el propio script, no depende de ninguna variable de entorno), pero sin
+  tocar el horario real (11:00 a 01:00, ver abajo): eso solo lo hace `--open-24h` o el script de arriba.
 
 | Local | Usuario | Zona horaria |
 |---|---|---|
